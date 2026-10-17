@@ -1,0 +1,63 @@
+{
+  "name": "@rabby-wallet/eth-keyring-trezor",
+  "version": "0.1.0",
+  "description": "A Ethereum key management library designed for handling Trezor Addresses",
+  "keywords": [
+    "RabbyHub",
+    "Ethereum"
+  ],
+  "homepage": "https://github.com/RabbyHub/rabby-mono/tree/main/packages/eth-keyring-trezor#readme",
+  "bugs": {
+    "url": "https://github.com/RabbyHub/rabby-mono/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RabbyHub/rabby-mono.git"
+  },
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build:docs": "typedoc",
+    "changelog:validate": "../../scripts/validate-changelog.sh @rabby-wallet/eth-keyring-trezor",
+    "cov:report": "open ./coverage/index.html",
+    "publish:preview": "yarn npm publish --tag preview",
+    "test": "jest --reporters=jest-silent-reporter",
+    "test:clean": "jest --clearCache",
+    "test:verbose": "jest --verbose",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@ethereumjs/tx": "5.4.0",
+    "@ethereumjs/util": "9.1.0",
+    "@metamask/eth-sig-util": "^8.2.0",
+    "@trezor/connect-plugin-ethereum": "9.1.2-beta.1",
+    "ethereumjs-util": "^7.1.5",
+    "hdkey": "^2.1.0"
+  },
+  "devDependencies": {
+    "@metamask/auto-changelog": "^3.4.3",
+    "@types/hdkey": "^2.0.3",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^20.14.8",
+    "deepmerge": "^4.2.2",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4",
+    "typedoc": "^0.24.8",
+    "typedoc-plugin-missing-exports": "^2.0.0",
+    "typescript": "5.7.3"
+  },
+  "peerDependencies": {
+    "@trezor/connect-plugin-ethereum": "9.1.2-beta.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

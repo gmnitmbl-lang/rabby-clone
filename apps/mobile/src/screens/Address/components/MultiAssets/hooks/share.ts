@@ -1,0 +1,119 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useFocusedTab } from 'react-native-collapsible-tab-view';
+
+import { isSameAddress } from '@rabby-wallet/base-utils/dist/isomorphic/address';
+
+import { useLoadAssets } from '@/screens/Search/useAssets';
+import { useHomeAssetAccountInfo } from '../hooks';
+import type { HomeTabName as TabName } from '@/hooks/navigation';
+import { type KeyringAccountWithAlias, useMyAccounts } from '@/hooks/account';
+import addressBalanceStore, { balanceAccountsStore } from '@/store/balance';
+import { findAccountByPriority } from '@/utils/account';
+import { useActivityStore } from '@/hooks/storeActivity/useActivityStore';
+
+export const useIsFocusedCurrentTab = (tabName: TabName) => {
+  const hasBeenFocusedRef = useRef(false);
+  const focusedTab = useFocusedTab();
+
+  const isFocused = useMemo(() => {
+    const currentFocused = focusedTab === tabName;
+    if (currentFocused) {
+      hasBeenFocusedRef.current = true;
+    }
+    return hasBeenFocusedRef.current;
+  }, [focusedTab, tabName]);
+
+  const isFocusing = useMemo(() => {
+    return focusedTab === tabName;
+  }, [focusedTab, tabName]);
+
+  return { isFocused, isFocusing };
+};
+
+export const useFindAccountByAddress = (
+  preferredAccounts?: KeyringAccountWithAlias[],
+) => {
+  const { accounts } = useMyAccounts();
+  const candidateAccounts = preferredAccounts ?? accounts;
+
+  const getAccountByAddress = useCallback(
+    (address: string) => {
+      const _accounts = candidateAccounts.filter(account =>
+        isSameAddress(account?.address, address),
+      );
+      return findAccountByPriority(_accounts);
+    },
+    [candidateAccounts],
+  );
+  return getAccountByAddress;
+};
+
+export const useCheckIsExpireAndUpdate = ({
+  isFocused,
+  isFocusing,
+}: {
+  isFocused: boolean;
+  isFocusing: boolean;
+}) => {
+  const initRef = useRef(false);
+  const { myTop10Addresses } = useHomeAssetAccountInfo();
+  const balanceAccounts = useActivityStore(
+    balanceAccountsStore,
+    state => state.balance,
+    Object.is,
+    { storeLabel: 'home-multi-assets-balance-accounts' },
+  );
+  const { checkIsExpireAndUpdate } = useLoadAssets();
+  const triggerUpdate = useCallback(
+    (force?: boolean) =>
+      addressBalanceStore.batchGetTotalBalance(myTop10Addresses, force, {
+        scene: 'AddressMultiAssets',
+        requester: 'useCheckIsExpireAndUpdate',
+        endpoint: 'openapi.getTotalBalanceV2',
+      }),
+    [myTop10Addresses],
+  );
+
+  useEffect(() => {
+    initRef.current = false;
+  }, [myTop10Addresses.length]);
+
+  const hasBalanceAccounts = useMemo(() => {
+    if (!myTop10Addresses.length) {
+      return false;
+    }
+    return myTop10Addresses.some(
+      address => !!balanceAccounts[address.toLowerCase()],
+    );
+  }, [balanceAccounts, myTop10Addresses]);
+
+  useEffect(() => {
+    if (!isFocused) return;
+
+    const cacheTop10AssetsId = setTimeout(() => {
+      if (initRef.current) {
+        return;
+      }
+      initRef.current = true;
+      checkIsExpireAndUpdate(false, {
+        updateReturn: true,
+        realTimeAddresses: myTop10Addresses,
+        ignoreLoading: !hasBalanceAccounts,
+      });
+    }, 50);
+
+    return () => {
+      cacheTop10AssetsId && clearTimeout(cacheTop10AssetsId);
+    };
+  }, [isFocused, checkIsExpireAndUpdate, myTop10Addresses, hasBalanceAccounts]);
+
+  useEffect(() => {
+    if (isFocusing) {
+      checkIsExpireAndUpdate(false, {});
+    }
+  }, [checkIsExpireAndUpdate, isFocusing]);
+
+  return {
+    triggerUpdate,
+  };
+};
